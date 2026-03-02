@@ -1,0 +1,32 @@
+services:
+  alloy:
+    container_name: alloy
+    image: ghcr.io/rogueoneecho/alloy
+    # Full host device access for prometheus.exporter.cadvisor to read cgroups
+    # https://grafana.com/docs/alloy/latest/reference/components/prometheus/prometheus.exporter.cadvisor/
+    privileged: true
+    # Host PID namespace for process-level metrics collection
+    # Listed for Kubernetes in cadvisor docs but may not be required for Docker
+    # https://grafana.com/docs/alloy/latest/reference/components/prometheus/prometheus.exporter.cadvisor/
+    pid: host
+    # Host network stack access for network interface metrics
+    # Listed for Kubernetes in cadvisor docs but may not be required for Docker
+    # https://grafana.com/docs/alloy/latest/reference/components/prometheus/prometheus.exporter.cadvisor/
+    network_mode: host
+    # Loads INSTANCE_NAME, MAXMIND_LICENSE_KEY, LOKI_URL, PROMETHEUS_URL
+    env_file:
+      - .env
+    volumes:
+      # Host root filesystem; rslave propagates runtime mount changes
+      - /:/host:ro,rslave
+      # Required by systemd journal to identify the host
+      - /etc/machine-id:/etc/machine-id:ro
+      # Volatile journal logs (runtime only, lost on reboot)
+      # https://grafana.com/docs/alloy/latest/reference/components/loki/loki.source.journal/
+      - /run/log/journal:/run/log/journal:ro
+      # Persistent journal logs (survives reboot)
+      - /var/log/journal:/var/log/journal:ro
+      # Required by prometheus.exporter.cadvisor to discover containers
+      # https://grafana.com/docs/alloy/latest/reference/components/prometheus/prometheus.exporter.cadvisor/
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped

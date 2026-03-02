@@ -1,0 +1,147 @@
+// Host metrics
+prometheus.exporter.unix "node" {
+  rootfs_path = "/host"
+}
+
+prometheus.scrape "node" {
+  targets    = prometheus.exporter.unix.node.targets
+  forward_to = [prometheus.remote_write.central.receiver]
+}
+
+// Container metrics (ignored if no Docker)
+prometheus.exporter.cadvisor "containers" {
+  docker_only = true
+}
+
+prometheus.scrape "containers" {
+  targets    = prometheus.exporter.cadvisor.containers.targets
+  forward_to = [prometheus.remote_write.central.receiver]
+}
+
+// Push metrics
+prometheus.remote_write "central" {
+  external_labels = {
+    instance = sys.env("INSTANCE"),
+  }
+  endpoint {
+    url = sys.env("PROMETHEUS_URL")
+  }
+}
+
+// Relabel journal fields to expose them as queryable labels in Loki
+// https://grafana.com/docs/alloy/latest/reference/components/loki/loki.relabel/
+// Journal fields are prefixed with __journal_ and dropped by default
+// https://grafana.com/docs/alloy/latest/reference/components/loki/loki.source.journal/
+loki.relabel "journal" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__comm"]
+    target_label  = "command"
+  }
+  // Kernel logs use SYSLOG_IDENTIFIER instead of _COMM
+  rule {
+    source_labels = ["__journal_syslog_identifier"]
+    regex         = "kernel"
+    target_label  = "command"
+    replacement   = "kernel"
+  }
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+}
+
+// Collect journal logs
+loki.source.journal "journal" {
+  forward_to    = [loki.process.geoip.receiver]
+  relabel_rules = loki.relabel.journal.rules
+  labels = {
+    instance = sys.env("INSTANCE"),
+  }
+}
+
+// Add GeoIP data to logs
+loki.process "geoip" {
+  forward_to = [loki.write.central.receiver]
+
+  // SSH logs
+  stage.match {
+    selector = "{command=\"sshd\"}"
+
+    stage.regex {
+      expression = "from (?P<src_ip>[\\d.:a-fA-F]+) port"
+    }
+
+    stage.geoip {
+      source  = "src_ip"
+      db      = "/geoip/GeoLite2-City.mmdb"
+      db_type = "city"
+    }
+
+    stage.labels {
+      values = {
+        geoip_country_code   = "",
+        geoip_continent_code = "",
+      }
+    }
+
+    stage.structured_metadata {
+      values = {
+        geoip_location_latitude  = "",
+        geoip_location_longitude = "",
+        geoip_city_name          = "",
+        geoip_country_name       = "",
+        geoip_continent_name     = "",
+        geoip_timezone           = "",
+        geoip_subdivision_name   = "",
+        geoip_subdivision_code   = "",
+        geoip_postal_code        = "",
+      }
+    }
+  }
+
+  // UFW logs (from kernel)
+  stage.match {
+    selector = "{command=\"kernel\"}"
+    pipeline_name = "ufw"
+
+    stage.regex {
+      expression = "SRC=(?P<src_ip>[\\d.:a-fA-F]+)"
+    }
+
+    stage.geoip {
+      source  = "src_ip"
+      db      = "/geoip/GeoLite2-City.mmdb"
+      db_type = "city"
+    }
+
+    stage.labels {
+      values = {
+        geoip_country_code   = "",
+        geoip_continent_code = "",
+      }
+    }
+
+    stage.structured_metadata {
+      values = {
+        geoip_location_latitude  = "",
+        geoip_location_longitude = "",
+        geoip_city_name          = "",
+        geoip_country_name       = "",
+        geoip_continent_name     = "",
+        geoip_timezone           = "",
+        geoip_subdivision_name   = "",
+        geoip_subdivision_code   = "",
+        geoip_postal_code        = "",
+      }
+    }
+  }
+}
+
+// Push logs
+loki.write "central" {
+  endpoint {
+    url = sys.env("LOKI_URL")
+  }
+}

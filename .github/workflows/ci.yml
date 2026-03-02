@@ -1,0 +1,15 @@
+name: CI
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ''
+jobs:
+  ci:
+    uses: RogueOneEcho/ci/.github/workflows/docker.yml@v1
+    with:
+      docker-image: rogueoneecho/alloy
+      build-context: src
+      ref: ${{ inputs.ref }}
+    secrets: inherit
