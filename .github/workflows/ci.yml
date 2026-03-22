@@ -11,5 +11,6 @@ jobs:
     with:
       docker-image: rogueoneecho/alloy
       build-context: src
+      grype-args: ''
       ref: ${{ inputs.ref }}
     secrets: inherit
