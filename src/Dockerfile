@@ -1,4 +1,4 @@
-ARG ALLOY_VERSION=v1.16.2
+ARG ALLOY_VERSION=v1.16.3
 FROM grafana/alloy:${ALLOY_VERSION}
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 COPY entrypoint.sh /entrypoint.sh
