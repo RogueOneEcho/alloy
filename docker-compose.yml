@@ -13,7 +13,7 @@ services:
     # Listed for Kubernetes in cadvisor docs but may not be required for Docker
     # https://grafana.com/docs/alloy/latest/reference/components/prometheus/prometheus.exporter.cadvisor/
     network_mode: host
-    # Loads INSTANCE_NAME, MAXMIND_LICENSE_KEY, LOKI_URL, PROMETHEUS_URL
+    # Loads INSTANCE, MAXMIND_LICENSE_KEY, LOKI_URL, PROMETHEUS_URL
     env_file:
       - .env
     volumes:
