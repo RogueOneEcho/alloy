@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+# Read the value of VAR from the file at VAR_FILE, if set.
+file-env () {
+  local VAR="$1"
+  local FILE_VAR="${VAR}_FILE"
+  if [[ -z "${!FILE_VAR:-}" ]]
+  then
+    return 0
+  fi
+  if [[ -n "${!VAR:-}" ]]
+  then
+    log-error "${VAR} and ${FILE_VAR} must not both be set"
+    exit 1
+  fi
+  if [[ ! -r "${!FILE_VAR}" ]]
+  then
+    log-error "${FILE_VAR} is not a readable file: ${!FILE_VAR}"
+    exit 1
+  fi
+  printf -v "${VAR}" '%s' "$(< "${!FILE_VAR}")"
+}

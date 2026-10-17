@@ -1,3 +1,5 @@
 *
 !config.alloy
 !entrypoint.sh
+!file-env
+!logging

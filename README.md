@@ -36,6 +36,26 @@ Copy `.env.example` to `.env` and set:
 - `PROMETHEUS_URL` — Prometheus remote write endpoint
 - `LOKI_URL` — Loki push endpoint
 
+### Secrets
+
+`MAXMIND_LICENSE_KEY` can be read from a file by setting `MAXMIND_LICENSE_KEY_FILE` to its path, e.g. a compose secret:
+
+```yaml
+services:
+  alloy:
+    environment:
+      MAXMIND_LICENSE_KEY_FILE: /run/secrets/maxmind_license_key
+    secrets:
+    - maxmind_license_key
+
+secrets:
+  maxmind_license_key:
+    environment: MAXMIND_LICENSE_KEY
+```
+
+- Setting both `MAXMIND_LICENSE_KEY` and `MAXMIND_LICENSE_KEY_FILE` is an error
+- Trailing newlines in the file are ignored
+
 ## Releases and Changes
 
 Releases and a full changelog are available via [GitHub Releases](https://github.com/RogueOneEcho/alloy/releases).
