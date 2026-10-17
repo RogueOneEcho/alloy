@@ -15,6 +15,7 @@ docker pull ghcr.io/rogueoneecho/alloy
 ## Features
 
 - Automatic [GeoLite2-City](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) download at container startup
+- Stops at startup if a required variable is missing or the GeoLite2 download fails
 - Pre-configured host metrics, container metrics, and journal log collection
 - GeoIP enrichment of SSH and UFW log entries
 - Configurable via environment variables
